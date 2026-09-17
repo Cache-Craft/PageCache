@@ -1,42 +1,51 @@
 #include <iostream>
+#include <vector>
 
 #include "../cache/fifo.h"
+#include "../cache/lru.h"
+#include "../file/file_reader.h"
 
-int main() {
+void runFIFO(const std::vector<int>& trace) {
+    FIFOCache fifo(3);
 
-    FIFOCache cache(3);
-
-    int pages[] = {1, 2, 3, 1, 4, 2, 5};
-
-    int totalPages = sizeof(pages) / sizeof(pages[0]);
-
-    for (int i = 0; i < totalPages; i++) {
-
-        int page = pages[i];
-
-        bool hit = cache.access(page);
-
-        std::cout << "Accessing page " << page;
-
-        if (hit) {
-            std::cout << " -> HIT\n";
-        } else {
-            std::cout << " -> MISS\n";
-        }
-
-        cache.printCache();
+    for (int page : trace) {
+        fifo.access(page);
     }
 
     std::cout << "\n===== FIFO RESULTS =====\n";
+    std::cout << "Hits       : " << fifo.getHits() << "\n";
+    std::cout << "Misses     : " << fifo.getMisses() << "\n";
+    std::cout << "Hit Ratio  : " << fifo.getHitRatio() << "\n";
+}
 
-    std::cout << "Hits: "
-              << cache.getHits() << "\n";
+void runLRU(const std::vector<int>& trace) {
+    LRUCache lru(3);
 
-    std::cout << "Misses: "
-              << cache.getMisses() << "\n";
+    for (int page : trace) {
+        lru.access(page);
+    }
 
-    std::cout << "Hit Ratio: "
-              << cache.getHitRatio() << "\n";
+    std::cout << "\n===== LRU RESULTS =====\n";
+    std::cout << "Hits       : " << lru.getHits() << "\n";
+    std::cout << "Misses     : " << lru.getMisses() << "\n";
+    std::cout << "Hit Ratio  : " << lru.getHitRatio() << "\n";
+}
+
+int main() {
+    try {
+        std::vector<int> trace =
+            FileReader::readAccessTrace("data/sample_trace.txt");
+
+        std::cout << "===== PAGECACHE FILE TRACE =====\n";
+        std::cout << "Total Accesses : " << trace.size() << "\n";
+
+        runFIFO(trace);
+        runLRU(trace);
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << "\n";
+        return 1;
+    }
 
     return 0;
 }
