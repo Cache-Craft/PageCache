@@ -3,12 +3,12 @@
 
 #include "../cache/fifo.h"
 #include "../cache/lru.h"
-#include "../file/file_reader.h"
+#include "../workload/workload_generator.h"
 
-void runFIFO(const std::vector<int>& trace) {
+void runFIFO(const std::vector<int>& workload) {
     FIFOCache fifo(3);
 
-    for (int page : trace) {
+    for (int page : workload) {
         fifo.access(page);
     }
 
@@ -18,10 +18,10 @@ void runFIFO(const std::vector<int>& trace) {
     std::cout << "Hit Ratio  : " << fifo.getHitRatio() << "\n";
 }
 
-void runLRU(const std::vector<int>& trace) {
+void runLRU(const std::vector<int>& workload) {
     LRUCache lru(3);
 
-    for (int page : trace) {
+    for (int page : workload) {
         lru.access(page);
     }
 
@@ -32,20 +32,28 @@ void runLRU(const std::vector<int>& trace) {
 }
 
 int main() {
-    try {
-        std::vector<int> trace =
-            FileReader::readAccessTrace("data/sample_trace.txt");
+    int count = 20;
+    int maxPage = 5;
 
-        std::cout << "===== PAGECACHE FILE TRACE =====\n";
-        std::cout << "Total Accesses : " << trace.size() << "\n";
+    std::cout << "===== PAGECACHE WORKLOAD EXPERIMENT =====\n";
+    std::cout << "Accesses   : " << count << "\n";
+    std::cout << "Page Range : 1-" << maxPage << "\n";
 
-        runFIFO(trace);
-        runLRU(trace);
-    }
-    catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << "\n";
-        return 1;
-    }
+    auto sequential = WorkloadGenerator::generateSequential(count);
+    auto random = WorkloadGenerator::generateRandom(count, maxPage);
+    auto mixed = WorkloadGenerator::generateMixed(count, maxPage);
+
+    std::cout << "\n----- SEQUENTIAL WORKLOAD -----\n";
+    runFIFO(sequential);
+    runLRU(sequential);
+
+    std::cout << "\n----- RANDOM WORKLOAD -----\n";
+    runFIFO(random);
+    runLRU(random);
+
+    std::cout << "\n----- MIXED WORKLOAD -----\n";
+    runFIFO(mixed);
+    runLRU(mixed);
 
     return 0;
 }
