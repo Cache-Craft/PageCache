@@ -2,8 +2,13 @@
 
 using namespace std;
 
-ExperimentJob::ExperimentJob(const ExperimentConfig& config) {
-    this->config = config;
+ExperimentJob::ExperimentJob(int id, ExperimentConfig experimentConfig) {
+    jobId = id;
+    config = experimentConfig;
+}
+
+int ExperimentJob::getJobId() const {
+    return jobId;
 }
 
 ExperimentConfig ExperimentJob::getConfig() const {
