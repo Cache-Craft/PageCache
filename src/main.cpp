@@ -4,7 +4,7 @@
 #include "../cache/fifo.h"
 #include "../cache/lru.h"
 #include "../workload/workload_generator.h"
-
+#include "../metrics/metrics_collector.h"
 void runFIFO(const std::vector<int>& workload) {
     FIFOCache fifo(3);
 
@@ -13,11 +13,15 @@ void runFIFO(const std::vector<int>& workload) {
     }
 
     std::cout << "\n===== FIFO RESULTS =====\n";
-    std::cout << "Hits       : " << fifo.getHits() << "\n";
-    std::cout << "Misses     : " << fifo.getMisses() << "\n";
-    std::cout << "Hit Ratio  : " << fifo.getHitRatio() << "\n";
-}
 
+    MetricsCollector metrics(
+        static_cast<int>(workload.size()),
+        fifo.getHits(),
+        fifo.getMisses()
+    );
+
+    metrics.printMetrics();
+}
 void runLRU(const std::vector<int>& workload) {
     LRUCache lru(3);
 
@@ -26,11 +30,15 @@ void runLRU(const std::vector<int>& workload) {
     }
 
     std::cout << "\n===== LRU RESULTS =====\n";
-    std::cout << "Hits       : " << lru.getHits() << "\n";
-    std::cout << "Misses     : " << lru.getMisses() << "\n";
-    std::cout << "Hit Ratio  : " << lru.getHitRatio() << "\n";
-}
 
+    MetricsCollector metrics(
+        static_cast<int>(workload.size()),
+        lru.getHits(),
+        lru.getMisses()
+    );
+
+    metrics.printMetrics();
+}
 int main() {
     int count = 20;
     int maxPage = 5;
