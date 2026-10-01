@@ -17,3 +17,13 @@ def save_simulation(result, algorithm, cache_size, workload_id=None):
         m["working_set_size"],m["pollution_detected"],m["admission_rejections"]
     ))
     
+    
+    sid = cur.lastrowid
+    for a in result["access_log"]:
+        cur.execute("""
+            INSERT INTO access_logs
+            (simulation_id,sequence_no,page_number,hit,admitted,evicted_page)
+            VALUES (%s,%s,%s,%s,%s,%s)
+        """,(sid,a["sequence"],a["page"],a["hit"],a["admitted"],a["evicted_page"]))
+    c.commit(); cur.close(); c.close()
+    return sid
