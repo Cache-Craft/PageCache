@@ -27,3 +27,29 @@ def save_simulation(result, algorithm, cache_size, workload_id=None):
         """,(sid,a["sequence"],a["page"],a["hit"],a["admitted"],a["evicted_page"]))
     c.commit(); cur.close(); c.close()
     return sid
+
+
+
+
+def recent(limit=20):
+    c=connect(); cur=c.cursor(dictionary=True)
+    cur.execute("""
+        SELECT simulation_id,algorithm,selected_algorithm,cache_size,
+               total_requests,hit_ratio,miss_ratio,eviction_count,
+               avg_latency_ms,working_set_size,pollution_detected,
+               admission_rejections,created_at
+        FROM simulations ORDER BY simulation_id DESC LIMIT %s
+    """,(limit,))
+    rows=cur.fetchall(); cur.close(); c.close()
+    return rows
+
+
+
+def save_workload(kind,pages,locality_score):
+    c=connect(); cur=c.cursor()
+    cur.execute("""
+        INSERT INTO workloads(workload_type,request_count,unique_pages,locality_score)
+        VALUES(%s,%s,%s,%s)
+    """,(kind,len(pages),len(set(pages)),locality_score))
+    wid=cur.lastrowid; c.commit(); cur.close(); c.close()
+    return wid
