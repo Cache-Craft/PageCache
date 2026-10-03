@@ -4,9 +4,9 @@ using namespace std;
 
 void Metrics::calculate(Result& result)
 {
-    if (result.evictions < 0)
-        result.evictions = 0;
+    if (result.workingSet < 0)
+        result.workingSet = 0;
 
-    if (result.latency < 0)
-        result.latency = 0;
+    if (result.pollution && result.workingSet == 0)
+        result.pollution = false;
 }
