@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Adaptive Page Cache</title><link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="container">
+<h1>Adaptive Page Cache Management System</h1>
+<p class="muted">C++ OS Engine · Flask API · MySQL</p>
+<div class="panel">
+<label>Algorithm
+<select id="algorithm"><option>ADAPTIVE</option><option>FIFO</option><option>LRU</option><option>LFU</option><option>CLOCK</option></select></label>
+<label>Cache Size <input id="cache" type="number" value="4" min="1"></label>
+<label>Pages <input id="pages" value="1,2,3,1,2,4,1,2,5,1,2"></label>
+<button onclick="simulate()">Run Simulation</button>
+</div>
+<div id="cards" class="grid"></div>
+<pre id="output"></pre>
+<h2>Recent Experiments</h2><table><thead><tr><th>ID</th><th>Algorithm</th><th>Hit %</th><th>Miss %</th><th>Latency</th></tr></thead><tbody id="history"></tbody></table>
+</div>
+<script src="/app.js"></script>
+</body>
+</html>
