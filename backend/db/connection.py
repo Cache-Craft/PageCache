@@ -1,9 +1,15 @@
+
+import os
 import mysql.connector
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def connect():
     return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="Root",
-        database="page_cache_db"
+        host=os.getenv("DB_HOST", "127.0.0.1"),
+        port=int(os.getenv("DB_PORT", "3306")),
+        user=os.getenv("DB_USER", "root"),
+        password=os.getenv("DB_PASSWORD", "Root"),
+        database=os.getenv("DB_NAME", "page_cache_db"),
     )
