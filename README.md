@@ -339,23 +339,17 @@ PageCache/
 │   └── cpp/
 └── README.md
 ```
-
 > The structure may evolve as new modules are integrated.
 
 ---
 
 # 10. Academic Project Note
-
 PageCache is developed as an academic project to demonstrate the practical integration of Operating Systems and Database Management Systems concepts through a modular performance-analysis application.
 
 The project is continuously evolving through multiple development phases. The progress checklist in this README is maintained as implementation continues.
-
 ---
-
 ## Project Status
 
 **Current Phase:** Phase 2 — Cache Algorithms, Workloads & Initial Integration
-
 **Overall Status:** In Progress
-
 **Repository:** 'https://github.com/Cache-Craft/PageCache.git'
