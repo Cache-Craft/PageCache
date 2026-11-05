@@ -1,24 +1,263 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Adaptive Page Cache</title><link rel="stylesheet" href="/style.css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Adaptive Page Cache & Storage Hierarchy Simulator</title>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <div class="container">
-<h1>Adaptive Page Cache Management System</h1>
-<p class="muted">C++ OS Engine · Flask API · MySQL</p>
-<div class="panel">
-<label>Algorithm
-<select id="algorithm"><option>ADAPTIVE</option><option>FIFO</option><option>LRU</option><option>LFU</option><option>CLOCK</option></select></label>
-<label>Cache Size <input id="cache" type="number" value="4" min="1"></label>
-<label>Pages <input id="pages" value="1,2,3,1,2,4,1,2,5,1,2"></label>
-<button onclick="simulate()">Run Simulation</button>
+    <header>
+        <div class="title-group">
+            <h1>Adaptive Page Cache & Storage Hierarchy Simulator</h1>
+            <p>Advanced Operating Systems PBL · C++17 Kernel Core · Flask REST API · MySQL Persistence</p>
+        </div>
+        <div class="system-status">
+            <div class="status-badge"><span class="status-dot"></span> C++17 Core Engine (ARC/CLOCK/LFU/LRU/FIFO)</div>
+            <div class="status-badge"><span class="status-dot"></span> Flask API</div>
+            <div class="status-badge"><span class="status-dot"></span> MySQL Persistence</div>
+        </div>
+    </header>
+
+    <!-- Real-World Workload Presets -->
+    <div class="section-title">
+        <span>⚡ Real-World Workload Presets</span>
+    </div>
+    <div class="presets-grid" id="presetsGrid">
+        <!-- Dynamically rendered or fallback -->
+        <div class="preset-card active" onclick="applyPreset('oltp_zipfian')">
+            <h3>🛒 OLTP Database</h3>
+            <p>Zipfian distribution (80/20 skew) simulating high-concurrency database queries hitting index root pages.</p>
+        </div>
+        <div class="preset-card" onclick="applyPreset('table_scan_pollution')">
+            <h3>⚠️ Table Scan Pollution</h3>
+            <p>Analytical table sweep. Demonstrates LRU cache pollution vs ARC scan-resistance.</p>
+        </div>
+        <div class="preset-card" onclick="applyPreset('cyclic_thrashing')">
+            <h3>🔄 Cyclic Loop (Belady)</h3>
+            <p>Repeated loop of N+1 pages causing 0% hit LRU thrashing and Belady's anomaly.</p>
+        </div>
+        <div class="preset-card" onclick="applyPreset('web_microservice')">
+            <h3>🌐 Web API Cache</h3>
+            <p>High temporal & spatial locality representing user session caching.</p>
+        </div>
+        <div class="preset-card" onclick="applyPreset('media_streaming')">
+            <h3>📺 Media Streaming</h3>
+            <p>One-pass sequential block reads with minimal cache reuse.</p>
+        </div>
+    </div>
+
+    <!-- Simulation Configuration Panel -->
+    <div class="panel">
+        <div class="controls-grid">
+            <div class="field">
+                <label for="algorithm">Replacement Policy</label>
+                <select id="algorithm">
+                    <option value="ADAPTIVE" selected>ADAPTIVE (Self-Tuning Heuristic)</option>
+                    <option value="ARC">ARC (Adaptive Replacement Cache)</option>
+                    <option value="LRU">LRU (Least Recently Used)</option>
+                    <option value="LFU">LFU (Least Frequently Used)</option>
+                    <option value="CLOCK">CLOCK (Second-Chance Policy)</option>
+                    <option value="FIFO">FIFO (First-In First-Out)</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="cacheSize">Cache Capacity (Frames)</label>
+                <input id="cacheSize" type="number" value="5" min="2" max="32">
+            </div>
+            <div class="field">
+                <label for="writeRatio">Write Operation Ratio</label>
+                <select id="writeRatio">
+                    <option value="0.10">10% Writes (Read-Heavy)</option>
+                    <option value="0.25" selected>25% Writes (Mixed OLTP)</option>
+                    <option value="0.50">50% Writes (Write-Intensive)</option>
+                    <option value="0.0">0% Writes (Pure Read)</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="storageProfile">Storage Backend Profile</label>
+                <select id="storageProfile">
+                    <option value="nvme" selected>NVMe Gen4 SSD (0.08ms read / 0.25ms flush)</option>
+                    <option value="ebs">Cloud Block EBS (1.20ms read / 2.50ms flush)</option>
+                    <option value="hdd">SATA HDD (8.50ms read / 12.00ms flush)</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="workloadCount">Request Count</label>
+                <input id="workloadCount" type="number" value="100" min="10" max="5000">
+            </div>
+            <div class="field">
+                <label for="uniquePages">Unique Page Pool</label>
+                <input id="uniquePages" type="number" value="25" min="5" max="500">
+            </div>
+            <div class="field custom-pages-field">
+                <label for="pagesInput">Page Reference Sequence (Comma-separated)</label>
+                <input id="pagesInput" value="1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5">
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-primary" onclick="runSimulation()">
+                ▶ Run Simulation & Benchmark
+            </button>
+            <button class="btn-secondary" onclick="generateWorkload()">
+                🎲 Generate Synthetic Workload
+            </button>
+        </div>
+    </div>
+
+    <!-- Cache Pollution Alert Banner (Dynamically shown) -->
+    <div id="pollutionBanner" class="alert-banner" style="display: none;">
+        <span>⚠️ <strong>Cache Pollution Detected!</strong> A large sequential scan is evicting the working set. Policies without scan-resistance (FIFO, basic LRU) suffer severe performance degradation.</span>
+    </div>
+
+    <!-- Real-World Storage Impact KPIs -->
+    <div class="section-title">
+        <span>📊 Storage Hierarchy & Hardware Performance KPIs</span>
+    </div>
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <span class="kpi-title">Hit Ratio</span>
+            <div class="kpi-value" id="kpiHitRatio">--%</div>
+            <span class="kpi-desc" id="kpiHitMiss">0 Hits / 0 Misses</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-title">Average Latency</span>
+            <div class="kpi-value" id="kpiAvgLatency">-- ms</div>
+            <span class="kpi-desc" id="kpiSpeedup">--x faster than direct disk</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-title">Dirty Evictions / Flushes</span>
+            <div class="kpi-value" id="kpiDirtyEvictions">--</div>
+            <span class="kpi-desc" id="kpiWritebacks">Clean: -- | Dirty Flushes: --</span>
+        </div>
+        <div class="kpi-card">
+            <span class="kpi-title">SSD Wear Avoided</span>
+            <div class="kpi-value" id="kpiSsdWear">-- KB</div>
+            <span class="kpi-desc" id="kpiIoSaved">Time Saved: -- ms</span>
+        </div>
+    </div>
+
+    <!-- Interactive Step-by-Step Visualizer -->
+    <div class="visualizer-card">
+        <div class="sim-header">
+            <div class="section-title" style="margin-bottom:0">
+                <span>🖥️ Real-Time Memory Frame Visualizer</span>
+            </div>
+            <div class="sim-controls">
+                <button class="sim-btn" onclick="simFirst()" title="First step">⏮</button>
+                <button class="sim-btn" onclick="simPrev()" title="Previous step">◀</button>
+                <button class="sim-btn" id="playBtn" onclick="togglePlay()" title="Play / Pause">▶ Play</button>
+                <button class="sim-btn" onclick="simNext()" title="Next step">▶</button>
+                <button class="sim-btn" onclick="simLast()" title="Last step">⏭</button>
+                <select id="simSpeed" class="sim-btn speed-select" onchange="changeSpeed()">
+                    <option value="600">Speed: 1x</option>
+                    <option value="300" selected>Speed: 2x</option>
+                    <option value="100">Speed: 5x</option>
+                    <option value="30">Speed: 10x</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="timeline-bar">
+            <input type="range" id="simScrubber" class="scrubber" min="0" max="0" value="0" oninput="onScrub(this.value)">
+        </div>
+
+        <!-- Step detail banner -->
+        <div class="step-banner" id="stepBanner">
+            <div class="step-details">
+                <span id="stepCounter" style="color:var(--text-muted)">Step 0 of 0</span>
+                <span id="stepOp" style="font-weight:700">Ready</span>
+            </div>
+            <div id="stepBadges" style="display:flex;gap:8px;align-items:center">
+                <span id="stepHitStatus" class="badge-hit" style="display:none">HIT</span>
+                <span id="stepEvictionInfo" style="font-size:12px;color:var(--text-muted)">No Eviction</span>
+            </div>
+        </div>
+
+        <!-- Cache Memory Frames Grid -->
+        <div class="frames-container" id="framesContainer">
+            <!-- Dynamic frame slots -->
+        </div>
+    </div>
+
+    <!-- Comparative Benchmark Matrix -->
+    <div class="section-title">
+        <span>🏆 Cross-Algorithm Benchmark Comparison</span>
+    </div>
+    <div class="benchmark-card">
+        <table>
+            <thead>
+                <tr>
+                    <th>Algorithm</th>
+                    <th>Hit Ratio</th>
+                    <th>Miss Ratio</th>
+                    <th>Clean Evict</th>
+                    <th>Dirty Flushes</th>
+                    <th>Avg Latency</th>
+                    <th>P95 Latency</th>
+                    <th>SSD Wear Saved</th>
+                </tr>
+            </thead>
+            <tbody id="benchmarkTable">
+                <tr><td colspan="8" style="text-align:center;color:var(--text-muted)">Run simulation to view comparative results across all algorithms.</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Educational Viva & Theory Guide -->
+    <div class="section-title">
+        <span>🎓 Operating Systems Viva & Architecture Guide</span>
+    </div>
+    <div class="theory-accordion">
+        <details open>
+            <summary>🛡️ Cache Pollution & Scan Resistance</summary>
+            <div class="theory-content">
+                <strong>Problem:</strong> When an analytical query or backup executes a full table scan (e.g., <code>SELECT * FROM orders</code>), thousands of pages are read once and never accessed again. Under traditional LRU or FIFO, this one-pass scan flushes the entire resident working set of hot pages (such as index roots and user sessions) out of RAM.<br><br>
+                <strong>Solution (ARC & 2Q):</strong> The Adaptive Replacement Cache (Megiddo & Modha, FAST 2003) divides memory into recency ($T_1$) and frequency ($T_2$) queues along with ghost metadata caches ($B_1, B_2$). Pages accessed only once stay isolated in $T_1$, preventing sequential scans from polluting the high-frequency $T_2$ cache!
+            </div>
+        </details>
+        <details>
+            <summary>💾 Dirty Page Evictions & NVMe SSD Write Amplification</summary>
+            <div class="theory-content">
+                <strong>Dirty Pages:</strong> In an OS virtual memory page cache, a write operation marks the page frame as <code>DIRTY</code>. Evicting a clean page costs 0 write I/O operations (the frame is discarded immediately). However, evicting a dirty page requires a synchronous or asynchronous <strong>Storage Writeback (Flush)</strong> before the frame can be reassigned.<br><br>
+                <strong>SSD Lifespan:</strong> Caching repeated writes coalesces multiple modifications in RAM into a single flush, drastically reducing <em>Write Amplification</em> and preserving the Terabytes Written (TBW) endurance of NVMe solid-state drives.
+            </div>
+        </details>
+        <details>
+            <summary>🔄 Belady's Anomaly & Working Set Theory</summary>
+            <div class="theory-content">
+                <strong>Belady's Anomaly (1969):</strong> Under FIFO replacement, increasing the cache frame capacity can paradoxically <em>increase</em> the number of page faults for specific reference sequences (e.g., 1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5). Stack algorithms like LRU and ARC are immune to Belady's anomaly.<br><br>
+                <strong>Working Set Model (Peter Denning, 1968):</strong> The set of pages referenced by a process during a sliding temporal window $\Delta$. If cache capacity is smaller than the working set size, the system experiences thrashing (continuous paging I/O).
+            </div>
+        </details>
+    </div>
+
+    <!-- MySQL Experiment History -->
+    <div class="section-title">
+        <span>🗄️ Recent Experiments (MySQL Persistent Storage)</span>
+    </div>
+    <div class="history-card">
+        <table>
+            <thead>
+                <tr>
+                    <th>Simulation ID</th>
+                    <th>Algorithm</th>
+                    <th>Selected</th>
+                    <th>Cache Frames</th>
+                    <th>Hit Ratio</th>
+                    <th>Latency</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody id="historyTable">
+                <tr><td colspan="7" style="text-align:center;color:var(--text-muted)">Loading recent experiments from MySQL...</td></tr>
+            </tbody>
+        </table>
+    </div>
 </div>
-<div id="cards" class="grid"></div>
-<pre id="output"></pre>
-<h2>Recent Experiments</h2><table><thead><tr><th>ID</th><th>Algorithm</th><th>Hit %</th><th>Miss %</th><th>Latency</th></tr></thead><tbody id="history"></tbody></table>
-</div>
+
 <script src="/app.js"></script>
 </body>
 </html>

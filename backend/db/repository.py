@@ -9,10 +9,19 @@ def save_simulation(result, algorithm, cache_size, workload_id=None):
 
     cur.execute("""
         INSERT INTO simulations
+<<<<<<< Updated upstream
         (algorithm, selected_algorithm, cache_size, workload_id, total_requests,
          hit_count, miss_count, eviction_count, hit_ratio, miss_ratio,
          avg_latency_ms, working_set_size, pollution_detected, admission_rejections)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+=======
+        (algorithm, selected_algorithm, cache_size, workload_id,
+         total_requests, hit_count, miss_count, eviction_count,
+         hit_ratio, miss_ratio, avg_latency_ms, working_set_size,
+         pollution_detected, admission_rejections)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s, %s)
+>>>>>>> Stashed changes
     """, (
         algorithm,
         result["selected_algorithm"],
@@ -35,7 +44,12 @@ def save_simulation(result, algorithm, cache_size, workload_id=None):
     for a in result["access_log"]:
         cur.execute("""
             INSERT INTO access_logs
+<<<<<<< Updated upstream
             (simulation_id, sequence_no, page_number, hit, admitted, evicted_page)
+=======
+            (simulation_id, sequence_no, page_number,
+             hit, admitted, evicted_page)
+>>>>>>> Stashed changes
             VALUES (%s, %s, %s, %s, %s, %s)
         """, (
             sid,
@@ -57,10 +71,17 @@ def recent(limit=20):
     cur = c.cursor(dictionary=True)
 
     cur.execute("""
+<<<<<<< Updated upstream
         SELECT simulation_id, algorithm, selected_algorithm, cache_size,
                total_requests, hit_ratio, miss_ratio, eviction_count,
                avg_latency_ms, working_set_size, pollution_detected,
                admission_rejections, created_at
+=======
+        SELECT simulation_id, algorithm, selected_algorithm,
+               cache_size, total_requests, hit_ratio, miss_ratio,
+               eviction_count, avg_latency_ms, working_set_size,
+               pollution_detected, admission_rejections, created_at
+>>>>>>> Stashed changes
         FROM simulations
         ORDER BY simulation_id DESC
         LIMIT %s
@@ -80,10 +101,44 @@ def save_workload(kind, pages, locality_score):
         INSERT INTO workloads
         (workload_type, request_count, unique_pages, locality_score)
         VALUES (%s, %s, %s, %s)
+<<<<<<< Updated upstream
     """, (kind, len(pages), len(set(pages)), locality_score))
+=======
+    """, (
+        kind,
+        len(pages),
+        len(set(pages)),
+        locality_score
+    ))
+>>>>>>> Stashed changes
 
     wid = cur.lastrowid
     c.commit()
     cur.close()
     c.close()
     return wid
+
+
+def save_algorithm_result(workload_id, algorithm, cache_size, result):
+    c = connect()
+    cur = c.cursor()
+    m = result["metrics"]
+
+    cur.execute("""
+        INSERT INTO algorithm_results
+        (workload_id, algorithm, cache_size, hit_ratio,
+         miss_ratio, eviction_count, avg_latency_ms)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """, (
+        workload_id,
+        algorithm,
+        cache_size,
+        m["hit_ratio"],
+        m["miss_ratio"],
+        m["evictions"],
+        m["avg_latency_ms"]
+    ))
+
+    c.commit()
+    cur.close()
+    c.close()
